@@ -119,16 +119,17 @@ details[open] summary:after{content:"–"}
       <div class="step"><span class="num">3</span><b>About you</b></div>
       <div id="picked" class="soon hide" style="margin-bottom:4px"></div>
       <div class="row2">
-        <div><label for="name">Full name</label><input id="name" autocomplete="name" maxlength="60" placeholder="Your name"></div>
-        <div><label for="sid">Student ID</label><input id="sid" inputmode="numeric" maxlength="15" placeholder="e.g. 011231234"></div>
+        <div><label for="name">Full name <span style="color:var(--bad)">*</span></label><input id="name" autocomplete="name" maxlength="60" placeholder="Your name"></div>
+        <div><label for="sid">Student ID <span style="color:var(--bad)">*</span></label><input id="sid" inputmode="numeric" maxlength="15" placeholder="e.g. 011231234"></div>
       </div>
-      <label for="email">UIU email <span style="color:var(--muted);font-weight:500">(for a confirmation, optional)</span></label>
+      <div class="hint" style="margin-top:8px">Only your name and ID are needed. Everything below is optional.</div>
+      <label for="email">UIU email <span style="color:var(--muted);font-weight:500">(optional, to get a confirmation)</span></label>
       <input id="email" type="email" autocomplete="email" maxlength="80" placeholder="you@bscse.uiu.ac.bd">
-      <label for="course">Course</label>
+      <label for="course">Course <span style="color:var(--muted);font-weight:500">(optional)</span></label>
       <select id="course"></select>
-      <label>What is it about?</label>
+      <label>What is it about? <span style="color:var(--muted);font-weight:500">(optional)</span></label>
       <div class="chips" id="topics"></div>
-      <label>Coming with friends?</label>
+      <label>Coming with friends? <span style="color:var(--muted);font-weight:500">(optional)</span></label>
       <div class="chips" id="group"></div>
       <label for="note">Anything I should know before? <span style="color:var(--muted);font-weight:500">(optional)</span></label>
       <textarea id="note" maxlength="400" placeholder="e.g. Chapter 3, problem 12. I don't get how the electric field adds up."></textarea>
@@ -196,11 +197,11 @@ function render(d){
   if (!d.hours.length) h.appendChild(el('div', null, 'Not set yet'));
   d.hours.forEach(function(x){ h.appendChild(el('div', null, x.day)); h.appendChild(el('div', null, x.times.join(', '))); });
   // courses / topics / group
-  var cs = $('course'); cs.innerHTML = '';
+  var cs = $('course'); cs.innerHTML = ''; var o0 = el('option', null, 'Choose (optional)'); o0.value = ''; cs.appendChild(o0);
   d.courses.forEach(function(c){ var o = el('option', null, c); o.value = c; cs.appendChild(o); });
   if (load('course')) cs.value = load('course');
   var tp = $('topics'); tp.innerHTML = '';
-  d.topics.forEach(function(t){ var b = el('button','chip',t); b.type = 'button'; b.onclick = function(){ S.topic = t; [].forEach.call(tp.children, function(x){ x.classList.toggle('on', x === b); }); check(); }; tp.appendChild(b); });
+  d.topics.forEach(function(t){ var b = el('button','chip',t); b.type = 'button'; b.onclick = function(){ S.topic = (S.topic === t) ? null : t; [].forEach.call(tp.children, function(x){ x.classList.toggle('on', x === b && S.topic === t); }); check(); }; tp.appendChild(b); });
   var gp = $('group'); gp.innerHTML = '';
   [['Just me',1],['+1 friend',2],['+2',3],['+3',4]].forEach(function(g){ var b = el('button','chip' + (S.group === g[1] ? ' on' : ''), g[0]); b.type = 'button'; b.onclick = function(){ S.group = g[1]; [].forEach.call(gp.children, function(x){ x.classList.toggle('on', x === b); }); }; gp.appendChild(b); });
   $('lenHint').textContent = 'Each slot is ' + d.slotLen + ' minutes. Crossed out times are taken.';
@@ -279,16 +280,16 @@ function pickSlot(s){
 function check(){
   var b = $('bookBtn');
   if (!S.slot){ b.disabled = true; b.textContent = 'Pick a time first'; return; }
-  var ok = $('name').value.trim().length >= 2 && /^[A-Za-z0-9-]{5,15}$/.test($('sid').value.replace(/\s/g,'')) && S.topic;
+  var ok = $('name').value.trim().length >= 2 && /^[A-Za-z0-9-]{5,15}$/.test($('sid').value.replace(/\s/g,''));
   b.disabled = !ok;
-  b.textContent = ok ? 'Book ' + clock(S.slot.start) : (S.topic ? 'Add your name and ID' : 'Choose a topic');
+  b.textContent = ok ? 'Book ' + clock(S.slot.start) : 'Add your name and student ID';
 }
 ['name','sid'].forEach(function(id){ $(id).addEventListener('input', check); });
 
 $('bookBtn').onclick = function(){
   var b = $('bookBtn'); b.disabled = true; b.textContent = 'Booking...'; $('err').textContent = '';
   var f = { date: S.day, start: S.slot.start, name: $('name').value, studentId: $('sid').value, email: $('email').value,
-    course: $('course').value, topic: S.topic, note: $('note').value, group: S.group };
+    course: $('course').value, topic: S.topic || '', note: $('note').value, group: S.group };
   save('name', f.name); save('sid', f.studentId); save('email', f.email); save('course', f.course);
   run('book', [f], function(t){ S.slot = null; $('picked').classList.add('hide'); showTicket(t, true); $('note').value = ''; refresh(); }, function(m){
     $('err').textContent = m; check(); refresh();
