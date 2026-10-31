@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Counseling poster</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#e9e6df;font-family:"Plus Jakarta Sans",system-ui,sans-serif;color:#16181d}
+.bar{max-width:794px;margin:16px auto 0;padding:0 16px;display:flex;gap:10px;justify-content:flex-end}
+.bar button{border:0;background:#3b5bdb;color:#fff;font:inherit;font-weight:800;border-radius:12px;padding:12px 18px;cursor:pointer}
+.page{width:100%;max-width:794px;margin:16px auto 40px;background:#fff;border-radius:6px;padding:56px 56px 44px;box-shadow:0 10px 40px rgba(0,0,0,.12)}
+.k{font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#3b5bdb;font-weight:800}
+h1{font-size:46px;line-height:1.05;margin:12px 0 10px;font-weight:800;letter-spacing:-.02em}
+.lead{font-size:19px;color:#4b5563;line-height:1.5;max-width:560px}
+.mid{display:flex;gap:36px;align-items:center;margin:36px 0 30px}
+#qr{padding:16px;border:3px solid #16181d;border-radius:22px;flex:none;background:#fff}
+#qr img,#qr canvas{display:block}
+.steps{font-size:18px;line-height:1.6}
+.steps b{display:block;font-size:20px;margin-bottom:6px}
+.steps ol{margin:0;padding-left:22px}
+.hours{border-top:2px solid #16181d;padding-top:20px;display:grid;grid-template-columns:150px 1fr;gap:8px 16px;font-size:17px}
+.hours div:nth-child(odd){font-weight:800}
+.who{margin-top:28px;display:flex;justify-content:space-between;align-items:flex-end;font-size:16px;color:#4b5563;gap:16px;flex-wrap:wrap}
+.who b{color:#16181d;font-size:20px}
+.url{font-size:12px;color:#6b7280;word-break:break-all;margin-top:14px}
+@media (max-width:640px){ .page{padding:28px 20px} h1{font-size:32px} .mid{flex-direction:column;align-items:flex-start} .hours{grid-template-columns:110px 1fr} }
+@media print{ html,body{background:#fff} .bar{display:none} .page{box-shadow:none;margin:0;max-width:none;border-radius:0;padding:40px} @page{size:A4;margin:10mm} }
+</style>
+</head>
+<body>
+<div class="bar"><button onclick="window.print()">Print or save as PDF</button></div>
+<div class="page">
+  <div class="k">Physics counseling</div>
+  <h1>Stuck on something?<br>Book a time to talk.</h1>
+  <div class="lead">Doubts in class, problem sets, lab reports, exam prep or advising. Pick a free slot on your phone in under a minute.</div>
+  <div class="mid">
+    <div id="qr"></div>
+    <div class="steps"><b>How to book</b><ol><li>Scan the code with your camera</li><li>Pick a day and time</li><li>Add your name, ID and topic</li></ol></div>
+  </div>
+  <div class="hours" id="hours"></div>
+  <div class="who"><div><b id="name"></b><br><span id="title"></span></div><div id="room" style="font-weight:800;color:#16181d;font-size:20px"></div></div>
+  <div class="url" id="url"></div>
+</div>
+<script>
+var BOOT = (function(){ var s = new URLSearchParams(location.search); return { url: location.origin + location.pathname.replace(/poster\.html$/, ''), b: s.get('b') || '', c: s.get('c') || '' }; })();
+var API = 'https://script.google.com/macros/s/AKfycbxiOiyH7e7dg0i75HiNk7FoIgW7XhGfPv0Io_wi18Y1AOOnQkm6E2DTSzWPNVgsSsftZw/exec';
+function run(fn, args, ok, bad){
+  args = args || [];
+  var q = fn === 'getPublic' ? { api: 'pub' }
+    : fn === 'book' ? { api: 'book', d: JSON.stringify(args[0]) }
+    : { api: fn, sid: args[0] || '', code: args[1] || '', id: args[2] || '' };
+  var u = API + '?' + Object.keys(q).map(function(k){ return encodeURIComponent(k) + '=' + encodeURIComponent(q[k]); }).join('&') + '&t=' + Date.now();
+  fetch(u, { redirect: 'follow', credentials: 'omit', cache: 'no-store' })
+    .then(function(r){ return r.json(); })
+    .then(function(j){ if (j && j.ok) ok(j.data); else bad((j && j.error) || 'Something went wrong. Please try again.'); })
+    .catch(function(){ bad('Network problem. Check your connection and try again.'); });
+}
+function $(id){ return document.getElementById(id); }
+function el(t, x){ var e = document.createElement(t); e.textContent = x; return e; }
+try { new QRCode($('qr'), { text: BOOT.url, width: 230, height: 230, correctLevel: QRCode.CorrectLevel.M }); } catch(e) { $('qr').textContent = 'QR unavailable'; }
+$('url').textContent = BOOT.url;
+run('getPublic', [], function(d){
+  $('name').textContent = d.name; $('title').textContent = d.title; $('room').textContent = d.room;
+  var h = $('hours'); h.innerHTML = '';
+  d.hours.forEach(function(x){ h.appendChild(el('div', x.day)); h.appendChild(el('div', x.times.join(', '))); });
+}, function(){});
+</script>
+</body>
+</html>
